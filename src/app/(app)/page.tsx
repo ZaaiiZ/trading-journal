@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import StatCard from "@/components/StatCard";
 import EquityCurve from "@/components/EquityCurve";
 import Link from "next/link";
@@ -8,14 +9,16 @@ function currSym(c: string) {
 }
 
 export default async function Dashboard() {
+  const userId = await requireUserId();
+
   const accounts = await prisma.account.findMany({
-    where: { status: "active" },
+    where: { status: "active", userId },
     include: { strategy: true },
   });
 
   const allTrades = await prisma.trade.findMany({
     where: {
-      account: { status: "active" },
+      account: { status: "active", userId },
     },
     orderBy: { entryDate: "desc" },
   });
@@ -56,7 +59,7 @@ export default async function Dashboard() {
   const accountsByPnl = await Promise.all(
     accounts.map(async (a) => {
       const trades = await prisma.trade.findMany({
-        where: { accountId: a.id, status: { not: "OPEN" } },
+        where: { accountId: a.id, status: { not: "OPEN" }, account: { userId } },
       });
       const pnl = trades.reduce((s, t) => s + (t.pnlAmount ?? 0), 0);
       return { ...a, pnl, tradeCount: trades.length };

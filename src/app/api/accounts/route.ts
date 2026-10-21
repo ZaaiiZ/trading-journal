@@ -1,8 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getApiUserId } from "@/lib/api-auth";
 
 export async function GET() {
+  const result = await getApiUserId();
+  if (result instanceof NextResponse) return result;
+  const userId = result;
+
   const accounts = await prisma.account.findMany({
+    where: { userId },
     include: {
       strategy: true,
       _count: { select: { trades: true } },
@@ -24,22 +30,21 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const result = await getApiUserId();
+  if (result instanceof NextResponse) return result;
+  const userId = result;
+
   const body = await request.json();
 
-  const user = await prisma.user.findFirst();
-  if (!user) {
-    return NextResponse.json({ error: "No user found" }, { status: 400 });
-  }
-
   let strategy = await prisma.strategy.findFirst({
-    where: { userId: user.id },
+    where: { userId },
   });
   if (!strategy) {
     strategy = await prisma.strategy.create({
       data: {
         name: "Long Mom",
         description: "Swing trading sur zones psychologiques",
-        userId: user.id,
+        userId,
       },
     });
   }
@@ -52,7 +57,7 @@ export async function POST(request: Request) {
       currency: body.currency || "EUR",
       type: body.type || "challenge",
       status: "active",
-      userId: user.id,
+      userId,
       strategyId: body.strategyId || strategy.id,
     },
     include: { strategy: true },

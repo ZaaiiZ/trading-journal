@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import DeleteTradeButton from "./DeleteButton";
@@ -25,13 +26,14 @@ export default async function TradeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const userId = await requireUserId();
 
   const trade = await prisma.trade.findUnique({
     where: { id },
     include: { account: { include: { strategy: true } } },
   });
 
-  if (!trade) notFound();
+  if (!trade || trade.account.userId !== userId) notFound();
 
   const status = statusLabel[trade.status] ?? {
     bg: "bg-zinc-700",

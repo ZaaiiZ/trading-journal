@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 import Link from "next/link";
 
 const statusColor: Record<string, string> = {
@@ -18,7 +19,10 @@ function formatDate(d: Date) {
 }
 
 export default async function JournalPage() {
+  const userId = await requireUserId();
+
   const trades = await prisma.trade.findMany({
+    where: { account: { userId } },
     orderBy: { entryDate: "desc" },
     include: { account: { include: { strategy: true } } },
   });

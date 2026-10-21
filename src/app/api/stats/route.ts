@@ -1,15 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getApiUserId } from "@/lib/api-auth";
 
 export async function GET() {
+  const result = await getApiUserId();
+  if (result instanceof NextResponse) return result;
+  const userId = result;
+
   const accounts = await prisma.account.findMany({
-    where: { status: "active" },
+    where: { status: "active", userId },
   });
 
   const trades = await prisma.trade.findMany({
     where: {
       status: { not: "OPEN" },
-      account: { status: "active" },
+      account: { status: "active", userId },
     },
     orderBy: { entryDate: "asc" },
   });

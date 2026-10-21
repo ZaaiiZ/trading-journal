@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireUserId } from "@/lib/session";
 
 const MONTH_NAMES = [
   "Janvier",
@@ -26,8 +27,10 @@ interface MonthRow {
 }
 
 export default async function MonthlyPage() {
+  const userId = await requireUserId();
+
   const trades = await prisma.trade.findMany({
-    where: { status: { not: "OPEN" } },
+    where: { status: { not: "OPEN" }, account: { userId } },
     orderBy: { entryDate: "desc" },
   });
 

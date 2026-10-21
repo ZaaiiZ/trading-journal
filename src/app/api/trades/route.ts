@@ -1,8 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getApiUserId } from "@/lib/api-auth";
 
 export async function GET() {
+  const result = await getApiUserId();
+  if (result instanceof NextResponse) return result;
+  const userId = result;
+
   const trades = await prisma.trade.findMany({
+    where: { account: { userId } },
     include: { account: { include: { strategy: true } } },
     orderBy: { entryDate: "desc" },
   });
@@ -10,8 +16,18 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const result = await getApiUserId();
+  if (result instanceof NextResponse) return result;
+  const userId = result;
+
   try {
     const body = await request.json();
+
+    const account = await prisma.account.findUnique({ where: { id: body.accountId } });
+    if (!account || account.userId !== userId) {
+      return NextResponse.json({ error: "Compte non trouvé" }, { status: 404 });
+    }
+
     const trade = await prisma.trade.create({
       data: {
         accountId: body.accountId,

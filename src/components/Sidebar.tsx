@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 
 const links = [
   { href: "/", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1" },
@@ -13,6 +14,7 @@ const links = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   return (
     <aside className="w-60 shrink-0 border-r border-zinc-800 bg-zinc-900 flex flex-col">
@@ -45,8 +47,18 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      <div className="p-4 border-t border-zinc-800 text-xs text-zinc-500">
-        Long Mom Strategy
+      <div className="p-4 border-t border-zinc-800">
+        {session?.user && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-zinc-400 truncate">{session.user.name}</span>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-xs text-zinc-500 hover:text-red-400 transition-colors"
+            >
+              Déconnexion
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );
