@@ -1,0 +1,88 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime   @default(now())
+  strategies   Strategy[]
+  accounts     Account[]
+}
+
+model Strategy {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts    Account[]
+  createdAt   DateTime  @default(now())
+}
+
+model Account {
+  id           String         @id @default(cuid())
+  name         String
+  broker       String
+  capital      Float
+  currency     String         @default("EUR")
+  type         String         @default("challenge")
+  status       String         @default("active")
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  strategyId   String
+  strategy     Strategy       @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  trades       Trade[]
+  monthlyStats MonthlyStats[]
+  createdAt    DateTime       @default(now())
+}
+
+model Trade {
+  id            String    @id @default(cuid())
+  accountId     String
+  account       Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  asset         String
+  direction     String    @default("LONG")
+  entryDate     DateTime
+  exitDate      DateTime?
+  entryPrice    Float
+  exitPrice     Float?
+  stopLoss      Float
+  takeProfit    Float
+  riskPercent   Float
+  lotSize       Float?
+  pnlAmount     Float?
+  pnlPercent    Float?
+  screenshotUrl String?
+  respectPlan   Boolean?
+  notes         String?
+  rrTarget      Float
+  status        String    @default("OPEN")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model MonthlyStats {
+  id          String  @id @default(cuid())
+  accountId   String
+  account     Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  month       Int
+  year        Int
+  totalTrades Int     @default(0)
+  wins        Int     @default(0)
+  losses      Int     @default(0)
+  pnlAmount   Float   @default(0)
+  winRate     Float   @default(0)
+  avgRR       Float   @default(0)
+
+  @@unique([accountId, month, year])
+}
